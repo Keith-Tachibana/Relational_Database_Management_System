@@ -1,0 +1,25 @@
+1. Basic information
+Student ID: 69125572, 16168220
+Student Name: Keith Tachibana, Harry Pham
+OS (bit): CentOS Linux 7.5.1804 on openlab.ics.uci.edu, 64-bit
+gcc version: 5.4.0
+
+
+
+2. Internal Record Format
+We used a variable length record format that included as part of the directory the number of fields and the byte offsets with pointers to the records themselves.  Our design satisfies the O(1) field access requirements because when executing a query looking for a specific record, the pointer feature would immediately take us to that byte offset, making efficient use of time as it concerns traversing the file and page systems.  The way we store a VarChar field is by removing the int length that was included in the pointer data given to us and store a -1 in the directory if it is NULL.  A NULL VarChar field takes up no space in the record.  To calculate the length of the VarChar field, we subtract the 2 offsets that are at the beginning of the VarChar and the end of the VarChar.  Any NULL value takes up no space in the record and is indicated by a -1 in the directory.
+
+
+
+3. Page Format
+Our page format design consists of the creation of a 4 KB sized page file that we will store the records in, along with the creation of a hidden page with an array of 3 integers for the counters.  As for the slot directory, we made sure to include a calculation of the amount of free space, along with the number of slots, and the records themselves broken down into the page number and the byte offset.
+
+
+
+4. Implementation Detail
+We were initially not sure if we had to implement the record based directory since we assumed that it would be given to us and there was not much mention of it in the project description, despite the fact that we knew we had to implement one for the page file manager.  
+
+
+
+5. Other (optional)
+There was some confusion and uncertainty as to how to best represent NULL in our code, by either setting it equal to -1 or not.  

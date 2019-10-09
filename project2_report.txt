@@ -1,0 +1,111 @@
+1. Basic information:
+
+Team number: 15 
+#1 Student ID: 16168220
+#1 Student Name: Harry Pham 
+#2 Student ID: 69125572	
+#2 Student Name: Keith Tachibana
+OS (bit): CentOS Linux 7.5.1804 on openlab.ics.uci.edu, 64-bit
+gcc version: 5.4.0
+
+
+2. Meta-data:
+- Show your meta-data design (Tables and Columns table) and information about each column:
+
+Tables: 
+(1, "Tables", "Tables")
+(2, "Columns", "Columns")
+
+Columns:
+(1, "table-id", TypeInt, 4 , 1) - the unique identifier of a table, used to identify it in Tables table
+(1, "table-name", TypeVarChar, 50, 2) - what the user passes through to functions to access records
+(1, "file-name", TypeVarChar, 50, 3) - also an argument the user passes through to functions as a const string when dealing with methods involving files
+(1, "table-type", TypeInt, 4, 4) - used to identify if a table was a system only table or a user table in order to determine permissions on each table
+// (1, "table-version", TypeInt, 4, 5) - added table-version to show which attributes in the Columns table is valid for adding and dropping attributes
+(2, "table-id", TypeInt, 4, 1) - the unique identifier of a table, used to identify it in Columns table
+(2, "column-name",  TypeVarChar, 50, 2) - this is the name of the attribute
+(2, "column-type", TypeInt, 4, 3) - the type of the record entry
+(2, "column-length", TypeInt, 4, 4) - the length of how many bytes it will take up
+(2, "column-position", TypeInt, 4, 5) - similar to the unique identifier to the column attribute for that table (every time a new column gets added, the position for that attribute will be +1 from the previous highest position
+// (2, "column-version", TypeInt, 4, 6) - used to see which attributes belong to which version and to create a valid record descriptor to read a record no matter what version that record was created for
+
+
+3. Internal Record Format:
+- Show your record format design and describe how your design satisfies O(1) field access. If not, just mention that your team hasn't implemented this feature:
+
+Our design satisfies the O(1) field access requirements because when executing a query looking for a specific record, the pointer feature would immediately take us to that byte offset, making efficient use of time as it concerns traversing the file and page systems.  A tombstone in the form of a boolean was added in the event that during an update, the record was not able to fit on the page.
+
+- Describe how you store a VarChar field:
+
+We stored the VarChar field as the length of the characters in the string by using the length of the record directory.  If a value was NULL, we had to look at the next value and if there were no more values, we used the slot length.
+
+- Describe how you deal with an update and delete:
+
+For update-
+The first thing we checked for was if the updated record could fit in the slot we already had.  If so, we inserted the data and compacted the page, while also updating the slot directory to reflect the new record length and the free space offset.
+If the updated record was greater than the amount of free space on the page, we created a tombstone and used insert to find a new page to store it and placed that RID into the tombstone.  Additionally, we updated the slot directory to reflect these changes and made sure to compact the remaining records.
+The final condition, where the amount of free space was greater than or equal to the size of the new record, had us compact the data and move the record to the back of the page, after which we proceeded to update the slot directory as usual and compact the remaining records.
+
+For delete-
+We performed a delete by moving the data behind the one marked for deletion into that deleted record's space.  Then the slot offset was updated for all records behind the deleted one by subtracting the slot length from them. We assigned a value of -1 to the slot offset to reflect that a record was deleted and gave it a slot length of 0 naturally.  The free space offset was also updated as the final step.
+
+The pseudocode for this is as follows-
+
+UPDATE:
+IF NEW DATA SIZE < SLOT LENGTH:
+	INSERT DATA AND COMPACT PAGE
+	UPDATE SLOT DIRECTORY DUE TO COMPACTING RECORDS BEHIND THAT RECORD BEING UPDATED
+	UPDATE SLOT DIRECTORY FOR UPDATED RECORD LENGTH
+	UPDATE FREE SPACE OFFSET
+ELSE IF FREE SPACE ON PAGE < NEW DATA SIZE:
+	CREATE TOMBSTONE AND USE INSERT TO FIND NEW PAGE TO STORE DATA AND PUT THAT RID INTO TOMBSTONE
+	UPDATE SLOT DIRECTORY FOR THAT RECORD TO SIZE OF TOMBSTONE
+	UPDATE SLOT DIRECTORY DUE TO COMPACTING RECORDS TO FILL IN THE NEW SPACE MADE BY THE TOMBSTONE
+	UPDATE FREES SPACE OFFSET
+ELSE IF FREE SPACE ON PAGE >= NEW DATA SIZE:
+	COMPACT THE DATA AND MOVE THE RECORD TO THE BACK OF THE PAGE
+	UPDATE SLOT DIRECTORY DUE TO COMPACTING RECORDS BEHIND THAT RECORD BEING UPDATED
+	UPDATE SLOT DIRECTORY FOR UPDATED  RECORD TO THE NEW OFFSET AND LENGTH
+	UPDATE FREE SPACE OFFSET
+	
+DELETE:
+	DELETE THE RECORD BY MOVING THE DATA BEHIND IT TO WHERE IT WAS
+	UPDATE SLOT OFFSET FOR RECORDS BEHIND DELETED RECORD BY SUBTRACTING THE SLOT LENGTH FROM THEM
+	SET SLOT OFFSET TO -1 TO SHOW THAT IT IS A DELETED RECORD AND TO OPEN UP THAT SLOT FOR USE TO ANOTHER RECORD BEING INSERTED
+	SET SLOT LENGTH TO 0 FOR DELETED RECORD
+	UPDATE FREESPACE OFFSET
+
+	
+4. Page Format:
+- Show your page format design:
+
+Our page format design consists of the creation of a 4 KB sized page file that we will store the records in, along with the creation of a hidden page with an array of 3 integers for the counters.  As for the slot directory, we made sure to include a calculation of the amount of free space, along with the number of slots, and the records themselves broken down into the page number and the byte offset.
+
+- Describe how you deal with an update and delete:
+
+For update-
+It opens the file and gets all the attributes for the table name that was passed through, calls update record, and closes the file.
+
+For delete-
+It also creates a file handle, opens it, gets the attributes, and calls delete record, closing the file at the end.
+
+
+5. File Format:
+- Show your file format design:
+
+The file name is the same as the table name since it maps to a single table.
+
+
+6. Implementation Detail:
+- Other implementation details goes here:
+
+Effort was made to integrate the extra features of this project, namely, addAttribute and dropAttribute.  For both, we added an extra column to tables and columns called "versions" to keep track of the versioning.  When we add or dropping an attribute, we only modify the tables and columns table.
+In either read tuple or read attribute, we check the version of the record being read and if it's outdated, we update it to the latest version transferring over relevant data to the new record and pulling out and deleting fields that may have happened since that version of the record.
+Additionally, we only update the record to new versions in both functions.
+There is now a version attribute in the Tables and Columns tables to keep track of which attributes are currently valid.
+
+
+7. Other (optional):
+- Freely use this section to tell us about things that are related to the project 2, but not related to the other sections (optional):
+
+N/A
