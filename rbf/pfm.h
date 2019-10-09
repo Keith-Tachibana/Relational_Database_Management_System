@@ -40,6 +40,8 @@ public:
     unsigned appendPageCounter;
     //Added to keep track of table ids for relation manager
     unsigned tableId;
+    //Added to keep track of root page for Index Manager
+    unsigned rootPageNumber;
 	FILE* file;
     
     FileHandle();                                                         // Default constructor
@@ -55,6 +57,8 @@ public:
     RC getTableId(unsigned &tid);
     RC setTableId(const unsigned &tid);
     RC incrementTableId();
+    RC getRootPageNumber(unsigned &rpn);
+    RC setRootPageNumber(const unsigned &rpn);
 }; 
 
 bool fileExists(const string &fileName);

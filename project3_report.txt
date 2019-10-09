@@ -1,0 +1,74 @@
+1. Basic information
+Team number (e.g., 01): 15
+#1 Student ID: 16168220
+#1 Student Name: Harry Pham 
+#2 Student ID: 69125572
+#2 Student Name: Keith Tachibana
+OS (bit): CentOS Linux 7.5.1804 on openlab.ics.uci.edu, 64-bit
+gcc version: 5.4.0
+
+
+
+2. Meta-data page in an index file
+- Show your meta-data page of an index design if you have any. 
+
+Read counter, write counter, append counter, and a root page tracker.
+
+
+
+3. Index Entry Format
+- Show your index entry design (structure). 
+
+Our structure consisted of the key size, key, and RID.
+
+
+
+4. Page Format
+- Show your internal-page (non-leaf node) design.
+
+Left page number (2 bytes), key size (2 bytes), key, rid (8 bytes), right page number (2 bytes).
+Page Directory = IsLeafPage(bool 1 byte), LeftPageNumber (unsigned short 2 bytes), RightPageNumber (unsigned short 2 bytes), TotalSlots (unsigned short 2 bytes), FreeSpaceoffset (unsigned short 2 bytes).
+Directory Size = 9 bytes
+
+
+
+- Show your leaf-page (leaf node) design.
+
+Key size (2 bytes), key, rid (8 bytes).
+Page Directory = IsLeafPage(bool 1 byte), LeftPageNumber (unsigned short 2 bytes), RightPageNumber (unsigned short 2 bytes), TotalSlots (unsigned short 2 bytes), FreeSpaceoffset (unsigned short 2 bytes).
+Directory Size = 9 bytes
+
+
+
+5. Implementation Detail
+- Have you added your own source file (.cc or .h)?
+
+No.
+
+
+
+- Have you implemented non-lazy deletion? Choose Yes or No: 
+
+No.
+
+
+
+- Have you implemented duplicated key handling that can span multiple pages? Choose Yes or No: 
+  If yes, please explain briefly how you have implemented this feature.
+
+ Yes, we used a composite key of (Key, RID) as unique identifiers for a node and sorted based on the key first, and if that was equal, we checked the RID page, and if that was equal, we checked the RID slot.  This means that the index is sorted by RIDs too, after they are sorted by key.
+  
+  
+  
+- Other implementation details:
+
+Check compareRid, compareKeyRid, and compareKey for sorting.
+
+
+
+6. Other (optional)
+- Freely use this section to tell us about things that are related to the project 3, but not related to the other sections (optional)
+
+N/A.
+
+

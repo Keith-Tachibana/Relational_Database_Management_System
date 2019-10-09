@@ -64,6 +64,9 @@ RC PagedFileManager::destroyFile(const string &fileName)
 
 RC PagedFileManager::openFile(const string &fileName, FileHandle &fileHandle)
 {
+	if (fileHandle.file){
+		return -1;
+	}
 	FILE* file = fopen(fileName.c_str(), "rb+");
 	if(!file){
 		return -1;
@@ -88,17 +91,19 @@ RC PagedFileManager::closeFile(FileHandle &fileHandle)
 
 FileHandle::FileHandle()
 {
-    readPageCounter = 0;
-    writePageCounter = 0;
-    appendPageCounter = 0;
+	readPageCounter = 0;
+	writePageCounter = 0;
+	appendPageCounter = 0;
     file = 0;
     tableId = 0;
+    rootPageNumber = 0;
 }
 
 
 FileHandle::~FileHandle()
 {
 	if(file){
+//		writeCounters();
 //		fclose(file);
 		file = 0;
 	}
@@ -121,6 +126,7 @@ RC FileHandle::readPage(PageNum pageNum, void *data)
 	}
 	fread(data, PAGE_SIZE, 1, file);
     ++readPageCounter;
+	writeCounters();
     return 0;
 }
 
@@ -139,6 +145,7 @@ RC FileHandle::writePage(PageNum pageNum, const void *data)
 	}
 	fwrite(data, PAGE_SIZE, 1, file);
 	++writePageCounter;
+	writeCounters();
     return 0;
 }
 
@@ -154,6 +161,7 @@ RC FileHandle::appendPage(const void *data)
 	}
 	fwrite(data, PAGE_SIZE, 1, file);
 	++appendPageCounter;
+	writeCounters();
     return 0;
 }
 
@@ -166,6 +174,7 @@ unsigned FileHandle::getNumberOfPages()
 
 RC FileHandle::collectCounterValues(unsigned &readPageCount, unsigned &writePageCount, unsigned &appendPageCount)
 {
+	readCounters();
 	readPageCount = readPageCounter;
 	writePageCount = writePageCounter;
 	appendPageCount = appendPageCounter;
@@ -177,7 +186,7 @@ RC FileHandle::readCounters(){
 		return -1;
 	}
 	void *hiddenPage = malloc(PAGE_SIZE);
-	int counters[4] = {0, 0, 0, 0};
+	int counters[5] = {0, 0, 0, 0, 0};
 	fseek(file, 0, SEEK_SET);
 	fread(hiddenPage, PAGE_SIZE, 1, file);
 	std::memcpy(&counters, hiddenPage, sizeof(counters));
@@ -185,6 +194,7 @@ RC FileHandle::readCounters(){
 	writePageCounter = counters[1];
 	appendPageCounter = counters[2];
 	tableId = counters[3];
+	rootPageNumber = counters[4];
 	free(hiddenPage);
 	return 0;
 }
@@ -192,7 +202,7 @@ RC FileHandle::readCounters(){
 RC FileHandle::writeCounters(){
 	void *hiddenPage = malloc(PAGE_SIZE);
     memset(hiddenPage, 0, PAGE_SIZE);
-	int counters[4] = {readPageCounter, writePageCounter, appendPageCounter, tableId};
+	unsigned counters[5] = {readPageCounter, writePageCounter, appendPageCounter, tableId, rootPageNumber};
 	std::memcpy(hiddenPage, &counters, sizeof(counters));
 	fseek(file, 0, SEEK_SET);
 	fwrite(hiddenPage, PAGE_SIZE, 1, file);
@@ -215,10 +225,20 @@ RC FileHandle::incrementTableId(){
 	return 0;
 }
 
+RC FileHandle::getRootPageNumber(unsigned &rpn){
+	rpn = rootPageNumber;
+	return 0;
+}
+
+RC FileHandle::setRootPageNumber(const unsigned &rpn){
+	rootPageNumber = rpn;
+	return 0;
+}
+
 void createHiddenPage(FILE *file){
 	void *hiddenPage = malloc(PAGE_SIZE);
     memset(hiddenPage, 0, PAGE_SIZE);
-	int initialValues[4]= {0, 0, 0, 0};
+	int initialValues[5]= {0, 0, 0, 0, 0};
 	std::memcpy(hiddenPage, &initialValues, sizeof(initialValues));
 	fseek(file, 0, SEEK_SET);
 	fwrite(hiddenPage, PAGE_SIZE, 1, file);

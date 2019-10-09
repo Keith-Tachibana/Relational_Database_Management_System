@@ -45,8 +45,8 @@ RC TEST_RM_15(const string &tableName)
     }
     rmsi.close();
 
-    // There should be at least ten rows - two for Tables and eight for Columns
-    if (count < 10) {
+    // There should be at least eight rows - three for Tables and five for Columns
+    if (count < 8) {
     	cout << "Your system catalog schema is not correct." << endl;
         cout << "***** [FAIL] Test Case 15 failed" << endl;
         free(returnedData);
