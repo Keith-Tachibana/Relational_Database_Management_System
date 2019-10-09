@@ -1,0 +1,71 @@
+1. Basic information
+Team number (e.g., 01): 15
+#1 Student ID: 16168220
+#1 Student Name: Harry Pham 
+#2 Student ID: 69125572
+#2 Student Name: Keith Tachibana
+OS (bit): CentOS Linux 7.5.1804 on openlab.ics.uci.edu, 64-bit
+gcc version: 5.4.0
+
+2. Catalog information about Index
+- Show your catalog information about an index (tables, columns). 
+Tables: 
+(1, "Tables", "Tables")
+(2, "Columns", "Columns")
+
+Columns:
+(1, "table-id", TypeInt, 4 , 1, 1, 0) - the unique identifier of a table, used to identify it in Tables table
+(1, "table-name", TypeVarChar, 50, 2, 1, 0) - what the user passes through to functions to access records
+(1, "file-name", TypeVarChar, 50, 3, 1, 0) - also an argument the user passes through to functions as a const string when dealing with methods involving files
+(1, "table-type", TypeInt, 4, 4, 1, 0) - used to identify if a table was a system only table or a user table in order to determine permissions on each table
+(1, "table-version", TypeInt, 4, 5, 1, 0) - added table-version to show which attributes in the Columns table is valid for adding and dropping attributes
+(2, "table-id", TypeInt, 4, 1, 1, 0) - the unique identifier of a table, used to identify it in Columns table
+(2, "column-name",  TypeVarChar, 50, 2, 1, 0) - this is the name of the attribute
+(2, "column-type", TypeInt, 4, 3, 1, 0) - the type of the record entry
+(2, "column-length", TypeInt, 4, 4, 1, 0) - the length of how many bytes it will take up
+(2, "column-position", TypeInt, 4, 5, 1, 0) - similar to the unique identifier to the column attribute for that table (every time a new column gets added, the position for that attribute will be +1 from the previous highest position
+(2, "column-version", TypeInt, 4, 6, 1, 0) - used to see which attributes belong to which version and to create a valid record descriptor to read a record no matter what version that record was created for
+(2, "column-index", TypeInt, 4, 7, 1, 0) - used to keep track if attribute has an index or not
+
+3. Block Nested Loop Join (If you have implemented this feature)
+- Describe how your block nested loop join works (especially, how you manage the given buffers.)
+Has a page for input and output, if input page is full, add it to the hash map which has a variable that has a max size of numPages - 2, Once hash map is full or there is no more records from left table, loop through right table looking for matches in the hash table and join the 2 records if a match is found.
+After going through all records in right table, clear the hash map and add records to input page to add to the hash map.  Repeat until there are no more records in left table which is signaled by QE_EOF.
+
+4. Index Nested Loop Join (If you have implemented this feature)
+- Describe how your Index Nested Loop Join join works.
+For each record in left table, loop through right index to see if there is a match and return it if found.  Do this until left table signals no more records with QE_EOF.
+
+5. Grace Hash Join (If you have implemented this feature)
+- Describe how your grace hash join works (especially, in-memory structure).
+We have a page for each partition in partitioning phase and add hash them using the hash function from functional library.  We take the hash given and modulo it to find which partition to put it in.  If a partition page is full, we flush that to disk.  We repeat this until we partitioned all the records to their respective partition for the left table.
+Then we do the same for the right table.
+
+The name for partition files are left_joinX_YY and right_joinX_YY
+X is the join number.  YY is the partition number.
+Records will only match between respective partition numbers due to the hashing function so we can effectively use less memory to join larger tables together, since we only need to have the respective partition tables in memory at the same time.
+
+In probing phase we use the number of partitions pages to know how many pages we can use for the hash map and use the Block Nested Loop Join implementation we did previously to search for matching records attributes.  The left table is the left partition we made and right table is the right partition.  After the join of the partition returns QE_EOF, we move on to the next partition pair until there are no more partitions left. 
+
+6. Aggregation
+- Describe how your aggregation (basic, group-based hash) works.
+For basic aggregation we saved a returnValue variable that keeps track of the values based on the operator given and a count variable that is used only for AVG and COUNT operations.  We go through all the records in the table and return the result.
+returnValue: MIN checks if current records value is less than returnValue and assigns it to returnValue if it is
+             MAX checks if current records value is greater than returnValue and assigns it to returnValue if it is
+             SUM adds current records value to return value
+             AVG adds current records value to return value and divide it by count after going through all records
+
+For group based aggregation we have a hash map that saves the groupBy value as a key and then perform the basic aggregation as above on the value for each record that has the same groubBy value as the key.  After completing the hash table, we iterate through the hash table to return the corresponding group and value information one by one as the user calls getNextTuple.
+
+We skip over NULL values for records when dealing with aggregation.
+
+7. Implementation Detail
+- Have you added your own source file (.cc or .h)?
+
+- Have you implemented any optional features? Then, describe them here.
+We implemented group aggregation and grace hash join.
+- Other implementation details:
+
+
+6. Other (optional)
+- Freely use this section to tell us about things that are related to the project 4, but not related to the other sections (optional)

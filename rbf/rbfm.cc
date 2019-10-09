@@ -171,6 +171,7 @@ RC RecordBasedFileManager::readRecord(FileHandle &fileHandle, const vector<Attri
 
 RC RecordBasedFileManager::readFormattedRecord(FileHandle &fileHandle, const RID &rid, void **formattedRecord) {
 	void *page = malloc(PAGE_SIZE);
+	memset(page, 0, PAGE_SIZE);
 	if (fileHandle.readPage(rid.pageNum, page) == -1){
 		free(page);
 		return -1;
@@ -252,6 +253,7 @@ RC RecordBasedFileManager::printRecord(const vector<Attribute> &recordDescriptor
 
 RC RecordBasedFileManager::deleteRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const RID &rid){
 	void *page = malloc(PAGE_SIZE);
+	memset(page, 0, PAGE_SIZE);
 	if (fileHandle.readPage(rid.pageNum, page) == -1){
 		free(page);
 		return -1;
@@ -311,6 +313,7 @@ RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Att
 
 RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<AttributeWithVersion> &recordDescriptor, const void *data, const RID &rid, AttrVersion version){
 	void *page = malloc(PAGE_SIZE);
+	memset(page, 0, PAGE_SIZE);
 	if (fileHandle.readPage(rid.pageNum, page) == -1){
 		free(page);
 		return -1;
@@ -457,6 +460,7 @@ RC RecordBasedFileManager::readAttribute(FileHandle &fileHandle, const vector<At
 
 RC RecordBasedFileManager::readAttribute(FileHandle &fileHandle, const vector<AttributeWithVersion> &recordDescriptor, const RID &rid, const string &attributeName, void *data, RID &actualRid, AttrVersion version){
 	void *page = malloc(PAGE_SIZE);
+	memset(page, 0, PAGE_SIZE);
 	if (fileHandle.readPage(rid.pageNum, page) == -1){
 		free(page);
 		return -1;
@@ -515,6 +519,19 @@ RC RecordBasedFileManager::readAttribute(FileHandle &fileHandle, const vector<At
 		directoryOffset = 0;
 	} else {
 		memcpy(&directoryOffset, formattedRecord + offset, sizeof(RecordDirectorySlot));
+		//added check if directoryoffset is null
+		if (directoryOffset == 65535){
+			for (int tempOffset = offset - sizeof(RecordDirectorySlot);; tempOffset -= sizeof(RecordDirectorySlot)){
+				if (tempOffset == sizeof(TombstoneBool) + sizeof(AttrVersion)){
+					directoryOffset = 0;
+					break;
+				}
+				memcpy(&directoryOffset, formattedRecord + tempOffset, sizeof(RecordDirectorySlot));
+				if (directoryOffset != 65535){
+					break;
+				}
+			}
+		}
 	}
 	unsigned directorySize = (1 + directoryLength) * sizeof(RecordDirectorySlot);
 	unsigned short recordDirectory[1 + directoryLength];
@@ -648,6 +665,7 @@ RC RBFM_ScanIterator::getNextRecord(RID &rid, void *data){
 			if (conditionAttribute == ""){
 				previousRid = currentRid;
 				if (compOp == NO_OP){
+					rid = currentRid;
 					if (RecordBasedFileManager::instance()->createDataRecord(fileHandle, recordDescriptor, requestedAttributes, currentRid, data, version, page) == -1){
 						free(page);
 						return RBFM_EOF;
@@ -795,17 +813,21 @@ bool RBFM_ScanIterator::compareValues(const void *valueToCompare){
 		memcpy(&varcharLength, value, sizeof(int));
 		unsigned recordVarcharLength = 0;
 		memcpy(&recordVarcharLength, valueToCompare + sizeof(char), sizeof(int));
-		void *recordVarcharValue = malloc(valueSize);
-		void *conditionVarcharValue = malloc(valueSize);
-		memset(recordVarcharValue, 0, valueSize);
-		memset(conditionVarcharValue, 0, valueSize);
-		memcpy(recordVarcharValue, valueToCompare + sizeof(char) + sizeof(int), recordVarcharLength);
-		memcpy(conditionVarcharValue, value + sizeof(int), varcharLength);
-//		int comparison = strcmp(recordVarcharValue, conditionVarcharValue);
+//		void *recordVarcharValue = malloc(valueSize);
+//		void *conditionVarcharValue = malloc(valueSize);
+//		memset(recordVarcharValue, 0, valueSize);
+//		memset(conditionVarcharValue, 0, valueSize);
+//		memcpy(recordVarcharValue, valueToCompare + sizeof(char) + sizeof(int), recordVarcharLength);
+//		memcpy(conditionVarcharValue, value + sizeof(int), varcharLength);
+//		int comparison = memcmp(recordVarcharValue, conditionVarcharValue, valueSize);
+//		free(recordVarcharValue);
+//		free(conditionVarcharValue);
+		char recordVarchar[recordVarcharLength + 1] = {0};
+		char conditionVarchar[varcharLength + 1] = {0};
+		memcpy(recordVarchar, valueToCompare + sizeof(char) + sizeof(int), recordVarcharLength);
+		memcpy(conditionVarchar, value + sizeof(int), varcharLength);
+		int comparison = strcmp(recordVarchar, conditionVarchar);
 //		int comparison = memcmp(value, valueToCompare + sizeof(char), valueSize);
-		int comparison = memcmp(recordVarcharValue, conditionVarcharValue, valueSize);
-		free(recordVarcharValue);
-		free(conditionVarcharValue);
 		switch(compOp){
 		case EQ_OP:
 			return comparison == 0;

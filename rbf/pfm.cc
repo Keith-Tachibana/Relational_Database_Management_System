@@ -168,6 +168,7 @@ RC FileHandle::appendPage(const void *data)
 
 unsigned FileHandle::getNumberOfPages()
 {
+	readCounters();
     return appendPageCounter;
 }
 
@@ -211,27 +212,32 @@ RC FileHandle::writeCounters(){
 }
 
 RC FileHandle::getTableId(unsigned &tid){
+	readCounters();
 	tid = tableId;
 	return 0;
 }
 
 RC FileHandle::setTableId(const unsigned &tid){
 	tableId = tid;
+	writeCounters();
 	return 0;
 }
 
 RC FileHandle::incrementTableId(){
 	++tableId;
+	writeCounters();
 	return 0;
 }
 
 RC FileHandle::getRootPageNumber(unsigned &rpn){
+	readCounters();
 	rpn = rootPageNumber;
 	return 0;
 }
 
 RC FileHandle::setRootPageNumber(const unsigned &rpn){
 	rootPageNumber = rpn;
+	writeCounters();
 	return 0;
 }
 
