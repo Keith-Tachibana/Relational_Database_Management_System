@@ -1,3 +1,7 @@
+# Relational Database Management System
+
+
+
 - Modify the "CODEROOT" variable in makefile.inc to point to the root of your codebase. Usually, this is not necessary.
 
 - Copy your own implementation of rbf, ix, and rm to folder, "rbf", "ix", and "rm", respectively.
