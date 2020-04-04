@@ -1,5 +1,5 @@
 # Relational Database Management System
-A relational database implementation written in C++ featuring a file manager, relation manager, index manager, and query engine for UCI's CS 222P: Principles of Data Management course.
+A relational database implementation written in C++ featuring a file manager, relation manager, index manager, and query engine, as part of UCI's CS 222P: Principles of Data Management course.
 ## Developed By
 Harry Pham and Keith Tachibana
 ## Development
