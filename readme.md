@@ -1,7 +1,8 @@
 # Relational Database Management System
-
-
-
+A relational database implementation written in C++ featuring a file manager, relation manager, index manager, and query engine for UCI's CS 222P: Principles of Data Management course.
+## Developed By
+Harry Pham and Keith Tachibana
+## Development
 - Modify the "CODEROOT" variable in makefile.inc to point to the root of your codebase. Usually, this is not necessary.
 
 - Copy your own implementation of rbf, ix, and rm to folder, "rbf", "ix", and "rm", respectively.
