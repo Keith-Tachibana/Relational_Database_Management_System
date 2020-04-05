@@ -3,6 +3,7 @@ A relational database implementation written in C++ featuring a file manager, re
 ## Developed By
 Harry Pham and Keith Tachibana
 ## Development
+#### Getting Started
 - _*_ Modify the "CODEROOT" variable in makefile.inc to point to the root of your codebase. Usually, this is not necessary.
 
 - _*_ Copy your own implementation of rbf, ix, and rm to folder, "rbf", "ix", and "rm", respectively.
