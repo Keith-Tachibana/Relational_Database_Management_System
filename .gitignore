@@ -30,3 +30,11 @@
 *.exe
 *.out
 *.app
+
+cmake-build-debug/
+cmake-build-wsl_profile/
+CMakeLists.txt
+
+.idea/
+node_modules/
+package-lock.json
